@@ -94,12 +94,15 @@ dependencies:
 - pip:
   - awscli==1.11.131
   - backports.weakref==1.0rc1
+  - imageio==2.2.0
   - ipython-genutils==0.2.0
   - jupyter-client==5.1.0
   - jupyter-console==4.1.0
   - jupyter-core==4.3.0
   - keras==2.0.6
   - markdown==2.6.8
+  - olefile==0.44
+  - pillow==4.3.0
   - prompt-toolkit==1.0.14
   - pyasn1==0.3.2
   - pygorithm==0.1.dev2

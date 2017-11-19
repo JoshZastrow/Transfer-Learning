@@ -44,4 +44,4 @@ for model in ['InceptionV3', 'ResNet50', 'Xception', 'VGG16']:
             axs.imshow(output[i, j, :, :], cmap='gray')
             axs.axis('off')
 
-    fig.savefig('{}.png'.format(model))
+    fig.savefig('results/{}.png'.format(model))

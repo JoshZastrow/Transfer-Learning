@@ -1,10 +1,3 @@
-Title: Machine Learning - Transfer Learning Feature Extractor
-Date: 2017-08-01 9:52
-tags: Autonomous-Driving, Machine-Learning, Transfer-Learning
-Category: Machine Learning
-author: Josh Zastrow
-summary: Getting Started with Comma-ai dataset
-
 # Building a Transfer Learning Feature Extractor
 
 I am working on a project to benchmark state-of-the-art machine learning models against a novel data processing algorithm. In order to compare the efficacy of data representation against multiple models, I will be employing Transfer Learning.
@@ -28,6 +21,7 @@ There are several reasons why this is useful:
 There are two ways to apply Transfer Learning techniques to a model:
 
 - Transfer Learning as feature extraction, saving the output and using this transformed data as the new input.
+
 - Transfer Learning as data processing, adding new untrained layers with random initialized values to the clipped base model and retraining.
 
 ### Feature Extraction Method
@@ -36,7 +30,9 @@ The first method is to clip the densely connected network segment from a pre-tra
 
 ### Data Processing Method
 
-The second method is to build a new model directly from a clipped base model. This  is where the pre-trained model would have it's densely connected layers removed, then new layers with randomized weights would be added to suit the context of the problem. The resulting model would be trained on the new dataset, either by freezing the weights of the base model (not training that segment) and only running backpropogation through the added layers, or if there is enough data on hand retraining the entire model which could improve the overall accuracy of the model. 
+The second method is to build a new model directly from a clipped base model. This  is where the pre-trained model would have it's densely connected layers removed, then new layers with randomized weights would be added to suit the context of the problem. Usually the new layers are just one or two standard affine layers connected to the output, but in the case of autonomous driving, sometimes it can be an RNN to recall recently seen examples.
+
+The resulting model would be trained on the new dataset, either by freezing the weights of the base model (not training that segment) and only running backpropogation through the added layers, or retraining the entire model. If retrained, the further refinement of the weights on the pretrained network could improve the overall accuracy of the model. 
 
 ### Approach
 
@@ -52,20 +48,34 @@ The following section covers getting the data, environment and model configurati
     4. configure model and data pipeline parameters
 
 ### Dataset
-The data used for this project was Udacity's Self Driving Car Dataset. Before continuing you should have the data extracted from the downloaded ROSbags into the respective output folders. 
 
-If you do not have the Udacity dataset, see this article on how to obtain it:
+The data used for this project was Udacity's Self Driving Car Dataset. I included a small segment of this dataset (3000 images) in the transfer learning repository so that the code can be run right out of the box.
+
+If you want access to the full dataset, navigate to Udacity's dataset github page on how to obtain it:
 
     https://github.com/udacity/self-driving-car
     
-    
-Note: if you are interested in using a different dataset for transfer learning that is fine; however the data generator function of this program is based off Udacity's data structure; a log file that has a column referencing the path to an image file, and an image folder.
-
-See [data_utils.py](<https://github.com/JoshZastrow/Self-Driving-Car/blob/master/Transfer-Learning/data_utils.py#L16>) for the data generator function
+ **Note:** if you are interested in using a different dataset for transfer learning that is fine; however you may need to modify the data generator function or organize your data to match Udacity's data structure: 
+ 
+    +-- data/
+    |   +-- log file <.csv>
+    |   +-- left/
+    |   |   +-- image #1 <.jpg>
+    |   |   +-- image #2 <.jpg>       
+    |   |   +-- ....     <.jpg>
+    |   +-- center/
+    |   |   +-- image #1 <.jpg>
+    |   |   +-- image #2 <.jpg>       
+    |   |   +-- ....     <.jpg>
+    |   +-- right/
+    |   |   +-- image #1 <.jpg>
+    |   |   +-- image #2 <.jpg>       
+    |   |   +-- ....     <.jpg>
+See [data_utils.py](https://github.com/JoshZastrow/Transfer-Learning/blob/master/data_utils.py#L16) for the data generator function. 
 
 ### Github Repository
 
-clone the repository, preferably to the directory that contains the dataset.
+Clone the repository. There is a "data/" folder that holds the sample data. If you are using your own dataset then you could move your data into that folder.
 
     https://github.com/JoshZastrow/Transfer-Learning
     
@@ -76,12 +86,18 @@ The repository contains an environment yaml file that can be used for setting up
 
 I have the Anaconda distribution and conda package manager, so I setup my python environments using Conda. If you have anaconda installed, open the terminal/command prompt, navigate to the local repo directory and enter:
 
-    conda create -n transferlearning --file=environment.yml
+    conda create -n transfer-learning --file=environment.yml
 
 Alternatively, outside the scope of this article but you may be able to create an environment from file using virtualenv, or you could skip the environment and install the packages listed in the file. 
 
 
-Not all the libraries in the environment file were used in the final code, alternatively you could read through the imported library list in model.py, config.py and data_utils.py and make sure you have those libraries installed.
+Not all the libraries in the environment file were used in the final code, so you could read through the imported libraries in these files:
+* model.py
+* config.py
+* data_utils.py  
+* visualizer.py 
+
+and make sure you have those libraries installed.
 
 ### Model Configuration
 
@@ -99,7 +115,7 @@ This will prompt for a few integer based parameters, all of which are optional. 
 
 # Feature Extraction
 
-To perform feature extraction on your dataset, run the model.py program. The [model]() is actually quite simple due to the tools offered with Keras. 
+To perform feature extraction on your dataset, run the model.py program. The [model](https://github.com/JoshZastrow/Transfer-Learning/blob/master/model.py#L13) is actually quite simple due to the tools offered with Keras. 
 
 My recommendation is to first run the helper on the program to get an outline of the required arguments for the program:
 
@@ -109,23 +125,31 @@ The program needs to know the output folder destination and the type of model to
 
     python model.py   \
     -model "InceptionV3" \
-    -output "output/results"
+    -output "data"
     
 Running the program will process images from your dataset through the base model and output the results to an output folder.
 
-If you would like to change how or where the resulting arrays are stored outside the settings of the config, the code for the data writer portion can be found [here](). 
+If you would like to change how or where the resulting arrays are stored outside the settings of the config, the code for the data writer portion can be found [here](https://github.com/JoshZastrow/Transfer-Learning/blob/master/data_utils.py#L103). 
 
 # Results
 
 For the purpose of demonstration, I will feed one example through each model. The resulting data transformations is a collection of sparse activations far removed from the data rich image input. 
 
+![Machine Learning model interpretation of a cat](https://github.com/JoshZastrow/Transfer-Learning/blob/master/CatResults.png)
 
-The code for this visualizer can be found [here]().
+The code for this visualizer can be found [here](https://github.com/JoshZastrow/Transfer-Learning/blob/master/visualizer.py#L23). It also shows how to make use of the model without the accompanying data pipeline.
+
 The abstraction done by these models is a bit of a black box, so the raw output of these transformations are difficult to interpolate at a glance.
 
-The original image is essentially a pixel window of several hundred values both in height and width, with three channels/filters of color. The resulting transformation leaves us with 2048 filters (512 for VGG) on very small pixel window--only a couple across.
+The original image is essentially a pixel window of several hundred values both in height and width, with only three channels/filters of color. The resulting transformation leaves us a very small pixel window--only a couple pixels across, but with many filters/channels. The resulting 2048 filters were organized in 32 x 64 tiles.
 
-The next steps with this newly processed data is to built a densely connected classifier to connect these inputs to ground truth labels. This secondary model will perform high level classification/regression to get use-able results. Happy coding!
+# Next Steps
+
+The next steps with this newly processed data is to build and train a densely connected classifier or regression model on these new inputs in relation to ground truth labels. Once trained, this secondary model will perform high level classification/regression to get use-able results. 
+
+For the data pipeline, it would be useful to have additional pre-processing functions before feeding the raw images to the base models. There is an [image processing](<https://github.com/JoshZastrow/Transfer-Learning/blob/master/data_utils.py#L70>) function that allows for transformation of images once read from file.
+
+Happy coding!
 
 
         
