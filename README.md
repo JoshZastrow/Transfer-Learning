@@ -135,7 +135,7 @@ If you would like to change how or where the resulting arrays are stored outside
 
 For the purpose of demonstration, I will feed one example through each model. The resulting data transformations is a collection of sparse activations far removed from the data rich image input. 
 
-![Machine Learning model interpretation of a cat](https://github.com/JoshZastrow/Transfer-Learning/blob/master/CatResults.png)
+![Transfer Model's interpretation of a cat](https://github.com/JoshZastrow/Transfer-Learning/blob/master/results/CatResults.png)
 
 The code for this visualizer can be found [here](https://github.com/JoshZastrow/Transfer-Learning/blob/master/visualizer.py#L23). It also shows how to make use of the model without the accompanying data pipeline.
 
