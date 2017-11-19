@@ -61,13 +61,13 @@ If you do not have the Udacity dataset, see this article on how to obtain it:
     
 Note: if you are interested in using a different dataset for transfer learning that is fine; however the data generator function of this program is based off Udacity's data structure; a log file that has a column referencing the path to an image file, and an image folder.
 
-See **insert github repo link** for the data generator function
+See [data_utils.py](<https://github.com/JoshZastrow/Self-Driving-Car/blob/master/Transfer-Learning/data_utils.py#L16>) for the data generator function
 
 ### Github Repository
 
-clone the repository to the same directory.
+clone the repository, preferably to the directory that contains the dataset.
 
-    hyperlink HERE
+    https://github.com/JoshZastrow/Transfer-Learning
     
     
 ### Environment
