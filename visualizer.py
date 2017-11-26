@@ -24,7 +24,7 @@ def visualize_layers():
                 weights='imagenet', 
                 input_shape=img[0].shape) 
     
-    layers = [layer.output for layer in VGG16.layers[:4]]
+    layers = [layer.output for layer in VGG16.layers[:8]]
     
     # Create a multiple output model
     # Each layer is an output in this model.
@@ -37,25 +37,89 @@ def visualize_layers():
         for filter in range(layer.shape[3]):
             layer_outputs.append(layer[0, :, :, filter])
             
+    layer_outputs.reverse()
+    
     # Animate the transformations
-    fig = plt.figure()
-    im = plt.imshow(layer_outputs.pop(0))
+    fig = plt.figure(facecolor='white')
+    gs1 = gridspec.GridSpec(1, 4)
+    gs2 = gridspec.GridSpec(1, 4)
+    gs1.update(left=0.05, right=0.95, wspace=0.05, top=0.8, bottom=0.4)
+    gs2.update(left=0.05, right=0.95, wspace=0.05, top=0.39, bottom=0.25)
     
+    img_ax = []
+    act_ax = []
+    images = []
+    labels = []
+    nodes = []  
+    
+    # Create subplots, images and labels
+    for i in range(4):
+        # Add a subplot for each image
+        img_ax += [fig.add_subplot(gs1[0, i])]
+        act_ax += [fig.add_subplot(gs2[0, i])]
+        # remove tick marks
+        img_ax[i].set_xticks([])
+        img_ax[i].set_yticks([])
+        act_ax[i].set_xticks([])
+        act_ax[i].set_yticks([])  
+        
+        # put an image and label in each subplot
+        images += [img_ax[i].imshow(layer_outputs[0], animated=True)]
+        labels += [img_ax[i].text(0.02, 0.90, '', 
+                   transform=img_ax[i].transAxes, 
+                   color='white')]
+  
+        # add a filter activation images
+        mask = np.zeros(shape=(1, activations[0].shape[3]))
+        nodes += [act_ax[i].imshow(mask)]
+    
+    act_num = 0
+    count = 0
     def init():
-        return [im]
+        for img in images:
+            img.set_data(layer_outputs[0])
+        
+        for txt in labels:
+            txt.set_text('')
+        
+        for idx in nodes:
+            idx.set_data(mask)
+        
+        return images + labels + nodes
     
-    def plotter(x):
-        im = plt.imshow(x, animate=True),
-        return [im]
+    def plotter(x=0):
+        global act_num, count
+        while True:
+            while act_num < len(activations):
+                num_filters = activations[act_num].shape[3]
+                while count < num_filters:
+                    for img in images:
+                        img.set_data(activations[act_num][0, :, :, count])
+                    
+                    for txt in labels:
+                        txt.set_text('activation {}'.format(act_num))
+                    
+                    for i in range(4):
+                        mask = np.zeros(shape=(1, num_filters))
+                        mask[0, count] = 1
+                        nodes[i] = act_ax[i].imshow(mask)
+                        
+                    res = images + labels + nodes
+                    
+                    count += 1  # next filter
+                    return res
+                
+                count = 0
+                act_num +=1
+            act_num = 0
     
-    anim = animation.FuncAnimation(fig, plotter, 
-                                   init_func=init,
-                                   frames=layer_outputs[:20],
-                                   interval=20,
-                                   blit=True)
+    anim = animation.FuncAnimation(fig, plotter,  init_func=init,
+                                   frames=400,
+                                   interval=5,
+                                   blit=True,
+                                   repeat=False)
     
     plt.show()
-    
     
 def visualize_outputs():
             
@@ -97,3 +161,6 @@ def visualize_outputs():
 
 if __name__ == '__main__':
     visualize_layers()   
+    
+    
+    
