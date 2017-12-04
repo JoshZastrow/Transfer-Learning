@@ -2,7 +2,7 @@
 """
 Created on Sun Oct 29 18:54:35 2017
 
-@author: joshua
+@author: Joshua Zastrow
 """
 
 import configparser

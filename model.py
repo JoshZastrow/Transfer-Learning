@@ -1,3 +1,11 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Sun Oct 19 18:54:35 2017
+
+@author: Joshua Zastrow
+"""
+
+
 from data_utils import DataGenerator, DataWriter, stopwatch
 import numpy as np 
 from config import get_user_settings, create_parser
