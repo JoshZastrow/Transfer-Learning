@@ -15,152 +15,179 @@ from keras import applications
 from keras import models
 
 def visualize_layers():
+    pass
+
+def get_image(tensor=True):
     
     # Load in image, convert to tensor shape
     img = io.imread('britishBlue.jpg')
     img = img / 255
-    img = np.expand_dims(img, axis=0)
-    
-    
-    architectures = ['VGG16', 'InceptionV3', 'Xception', 'ResNet50']
+    if tensor:
+        img = np.expand_dims(img, axis=0)
+    return img
 
-    global deepNN
+
+def create_plot_handles(model_list):
     
-    deepNN = {}
-    deepNN['model'] = {}
-    deepNN['layers'] = {}
-    deepNN['activations'] = {}
-    deepNN['count'] = len(architectures)
+    plotter = {}
+    image = get_image(tensor=False)
     
-     # Animate the transformations
-    fig = plt.figure(facecolor='grey')
-    gs1 = gridspec.GridSpec(1, deepNN['count'])
-    gs2 = gridspec.GridSpec(1, deepNN['count'])
+    # Animate the transformations
+    plotter['fig'] = plt.figure(facecolor='grey', figsize=(12,6))
+    plotter['gs1'] = gridspec.GridSpec(1, len(model_list))
+    plotter['gs2'] = gridspec.GridSpec(1, len(model_list))
     
-    gs1.update(left=0.05, right=0.95, wspace=0.05, top=0.8, bottom=0.4)
-    gs2.update(left=0.05, right=0.95, wspace=0.05, top=0.39, bottom=0.25)
+    plotter['gs1'].update(left=0.05, 
+                          right=0.95, 
+                          wspace=0.05, 
+                          top=0.8, 
+                          bottom=0.4)
+    plotter['gs2'].update(left=0.05, 
+                          right=0.95, 
+                          wspace=0.05, 
+                          top=0.35, 
+                          bottom=0.25)
     
-    img_ax = []
-    act_ax = []
-    images = []
-    labels = []
-    nodes = []
-    i = 0
+    plotter['ax1'] = {}
+    plotter['ax2'] = {}
     
-    for name in architectures:
-        
-        # Create Model and activations
-        deepNN['model'][name] = getattr(applications, name)(
-                            include_top=False, 
-                            weights='imagenet', 
-                            input_shape=img[0].shape) 
-        
-        layer_outputs = [layer.output for layer in deepNN['model'][name].layers]
-        
-        deepNN['activations'][name] = models.Model(input=deepNN['model'][name].input, 
-                                                  output=layer_outputs).predict(img)
+    for i, name in enumerate(model_list):
         
         # add subplots
-        print('adding subplot ',i)
-        img_ax += [fig.add_subplot(gs1[0, i])]
-        act_ax += [fig.add_subplot(gs2[0, i])]
+        plotter['ax1'][name] = plotter['fig'].add_subplot(plotter['gs1'][0, i])
+        plotter['ax2'][name] = plotter['fig'].add_subplot(plotter['gs2'][0, i])
         
         # remove tick marks
-        img_ax[i].set_xticks([])
-        img_ax[i].set_yticks([])
-        act_ax[i].set_xticks([])
-        act_ax[i].set_yticks([])  
-        img_ax[i].set_title(name)
-        act_ax[i].set_title('Filter Activation')
-        # put an image and label in each subplot
-        images += [img_ax[i].imshow(deepNN['activations'][name][0][0], animated=True)]
-        labels += [img_ax[i].text(.50, 0.90, '', fontsize=14,
-                                  horizontalalignment='center',
-                                  transform=img_ax[i].transAxes, 
-                                  color='white')]
-  
-        # add a filter activation images
-        mask = np.zeros(shape=(1, deepNN['activations'][name][0].shape[3]))
-        nodes += [act_ax[i].imshow(mask)]
+        plotter['ax1'][name].set_xticks([])
+        plotter['ax1'][name].set_yticks([])
+        plotter['ax1'][name].set_title(name)
         
-        i += 1
+        plotter['ax2'][name].set_xticks([])
+        plotter['ax2'][name].set_yticks([])
+        plotter['ax2'][name].set_title('Filter Activation')
+        
+        
+        plotter['ax1'][name] = plotter['ax1'][name].imshow(image, animated=True)
+        plotter['ax2'][name] = plotter['ax2'][name].imshow(np.ones((1,3)), animated=True)
+        
+    return plotter
 
 
-    def layer_generator():
-        
-        # architectures
-        architectures = deepNN['model'].keys()
-        # Initialize dictionary of frame lists
-        frame_data = {model_name: [] for model_name in architectures}
-        model_count = len(deepNN.keys())
-        
-        # keep track of how many frames there are
-        frame_data['count'] = {}
-        frame_data['max'] = 0
-        
-        for name in architectures:
-            layer_names = [l.name for l in deepNN['model'][name].layers]
-            
-            for ID, output in zip(layer_names, deepNN['activations'][name]):
-                filter_count = output.shape[3]
-        
-                for x in range(filter_count):
-                    
-                    # image visualization
-                    filter_image = output[0, :, : , x]
-                    
-                    # filter visualization
-                    filter_mask = np.zeros(shape=(1, filter_count))
-                     
-                    if filter_count % 64 == 0:
-                        filter_mask = filter_mask.reshape((-1, 64))
-                    
-                    # set index of visualized filter
-                    filter_mask.itemset(x, 1)
-                    
-                    data = {'name':ID, 
-                            'image': filter_image,
-                            'filter': filter_mask, 
-                            'model_count': model_count}
-                    
-                    frame_data[name].append(data)
-
-            
-            # Figure out what frames to incrememt by
-            frame_data['count'][name] = len(frame_data[name])
-            
-            if frame_data['max'] < frame_data['count'][name]:
-                frame_data['max'] = frame_data['count'][name]
-                
-        while True:
-            data_packet = {}
-            
-            for f in range(frame_data['max']):
-                for name in architectures:
-                    idx =  f % frame_data['count'][name]
-                    data_packet[name] = frame_data[name][idx]
-                
-                yield data_packet
-
-
-    def plotter(args):
-        k = 0
-        for name, data_packet in args.items():
-            images[k].set_data(data_packet['image'])
-            labels[k].set_text('Layer ' + data_packet['name'])
-            nodes[k] = act_ax[k].imshow(data_packet['filter'])
-            k += 1
-        res = images + labels + nodes
-
-        return res
-        
-    anim = animation.FuncAnimation(fig, plotter,
-                                   frames=layer_generator,
-                                   interval=1,
-                                   blit=True,
-                                   repeat=False)
+def create_model_activations(model_list):
     
-    plt.show() 
+    deepNN = {'models'      : model_list,
+              'activations': {},
+              'layer_names': {},
+              'count'      : len(model_list)}
+    
+    img = get_image(tensor=True)
+    
+    model_args = {'include_top' : False, 
+                  'weights'     : 'imagenet', 
+                  'input_shape' : img[0].shape}
+    
+    for name in model_list:
+        # Create Model and activations
+        model_network = getattr(applications, name)(**model_args)
+        model_outputs = [layer.output for layer in model_network.layers]
+        model_l_names = [layer.name for layer in model_network.layers]
+        model_inshape = model_network.input
+        
+        deepNN['layer_names'][name] = model_l_names
+        deepNN['activations'][name] = models.Model(input=model_inshape, 
+                                                   output=model_outputs).predict(img)
+
+    return deepNN
+
+
+def create_filter_outputs(deepNN):
+        
+    # architectures
+    model_list = deepNN['models']
+    
+    # Initialize dictionary of frame lists
+    frame_data = {model_name: [] for model_name in model_list}
+    
+    # keep track of how many frames there are
+    frame_data['count'] = {name : 0 for name in model_list}
+    
+    # Store name of models
+    frame_data['models'] = model_list
+    
+    for name in model_list:
+        for ID, output in zip(deepNN['layer_names'][name], 
+                              deepNN['activations'][name]):
+            
+            filter_count = output.shape[-1]
+    
+            for x in range(filter_count):
+                frame_data['count'][name] += 1
+                
+                # image visualization
+                filter_image = output[0, :, : , x]
+                
+                # filter visualization
+                filter_mask = np.zeros(shape=(1, filter_count))
+                 
+                if filter_count % 64 == 0:
+                    filter_mask = filter_mask.reshape((-1, 64))
+                
+                # set index of visualized filter
+                filter_mask.itemset(x, 1)
+                
+                data = {'layer': 'Layer' + ID + '\nfilter ' + str(x), 
+                        'image': filter_image,
+                        'filter': filter_mask}
+                
+                frame_data[name].append(data)
+                
+    frame_data['max'] = max(frame_data['count'].values())
+    
+    return frame_data
+
+
+def layer_generator(frame_data):
+
+        data_packet = {}
+        model_list = frame_data['models']
+        
+        for f in range(frame_data['max']):
+            for name in model_list:
+                idx =  f % frame_data['count'][name]
+                data_packet[name] = frame_data[name][idx]
+            
+            yield data_packet
+
+def init(plot_handle):
+    data_packet = {}
+    
+    for name in plot_handle['ax1'].keys():
+        data_packet[name] = {'image' : get_image(tensor=False),
+                             'layer' : 'input',
+                             'filter': np.ones(shape=(1, 3))}
+        
+        ax_transform = plot_handle['ax1'][name].transAxes
+        
+        plot_handle['ax1'][name].imshow(data_packet[name]['image'], animated=True)
+        plot_handle['ax1'][name].text(
+                                    x=0.50, 
+                                    y=0.860, 
+                                    s=data_packet[name]['layer'], 
+                                    fontsize=14, 
+                                    horizontalalignment='center', 
+                                    transform=ax_transform, 
+                                    color='white')
+        plot_handle['ax2'][name].imshow(data_packet[name]['filter'])
+      
+def animate(data_packet, plot_handle):
+    frames = []
+    
+    for name in plot_handle['ax1'].keys():
+        frames += [plot_handle['ax1'][name].set_data(data_packet[name]['image'])]
+        frames += [plot_handle['ax1'][name].set_text(data_packet[name]['layer'])]
+        frames += [plot_handle['ax2'][name].set_data(data_packet[name]['filter'])]
+      
+    return frames
     
     
 def visualize_outputs():
@@ -209,141 +236,17 @@ if __name__ == '__main__':
     img = np.expand_dims(img, axis=0)
     
     
-    architectures = ['VGG16', 'InceptionV3', 'Xception', 'ResNet50']
+    architectures = ['VGG16'] #, 'InceptionV3', 'Xception', 'ResNet50']
 
-    global deepNN
+    plot = create_plot_handles(architectures)
+    DNNs = create_model_activations(architectures)
+    data = create_filter_outputs(DNNs)
     
-    deepNN = {}
-    deepNN['model'] = {}
-    deepNN['layers'] = {}
-    deepNN['activations'] = {}
-    deepNN['count'] = len(architectures)
-    
-     # Animate the transformations
-    fig = plt.figure(facecolor='grey')
-    gs1 = gridspec.GridSpec(1, deepNN['count'])
-    gs2 = gridspec.GridSpec(1, deepNN['count'])
-    
-    gs1.update(left=0.05, right=0.95, wspace=0.05, top=0.8, bottom=0.4)
-    gs2.update(left=0.05, right=0.95, wspace=0.05, top=0.39, bottom=0.25)
-    
-    img_ax = []
-    act_ax = []
-    images = []
-    labels = []
-    nodes = []
-    i = 0
-    
-    for name in architectures:
-        
-        # Create Model and activations
-        deepNN['model'][name] = getattr(applications, name)(
-                            include_top=False, 
-                            weights='imagenet', 
-                            input_shape=img[0].shape) 
-        
-        layer_outputs = [layer.output for layer in deepNN['model'][name].layers]
-        
-        deepNN['activations'][name] = models.Model(input=deepNN['model'][name].input, 
-                                                  output=layer_outputs).predict(img)
-        
-        # add subplots
-        print('adding subplot ',i)
-        img_ax += [fig.add_subplot(gs1[0, i])]
-        act_ax += [fig.add_subplot(gs2[0, i])]
-        
-        # remove tick marks
-        img_ax[i].set_xticks([])
-        img_ax[i].set_yticks([])
-        act_ax[i].set_xticks([])
-        act_ax[i].set_yticks([])  
-        img_ax[i].set_title(name)
-        act_ax[i].set_title('Filter Activation')
-        # put an image and label in each subplot
-        images += [img_ax[i].imshow(deepNN['activations'][name][0][0], animated=True)]
-        labels += [img_ax[i].text(.50, 0.90, '', fontsize=14,
-                                  horizontalalignment='center',
-                                  transform=img_ax[i].transAxes, 
-                                  color='white')]
-  
-        # add a filter activation images
-        mask = np.zeros(shape=(1, deepNN['activations'][name][0].shape[3]))
-        nodes += [act_ax[i].imshow(mask)]
-        
-        i += 1
-
-
-    def layer_generator():
-        
-        # architectures
-        architectures = deepNN['model'].keys()
-        # Initialize dictionary of frame lists
-        frame_data = {model_name: [] for model_name in architectures}
-        model_count = len(deepNN.keys())
-        
-        # keep track of how many frames there are
-        frame_data['count'] = {}
-        frame_data['max'] = 0
-        
-        for name in architectures:
-            layer_names = [l.name for l in deepNN['model'][name].layers]
-            
-            for ID, output in zip(layer_names, deepNN['activations'][name]):
-                filter_count = output.shape[3]
-        
-                for x in range(filter_count):
-                    
-                    # image visualization
-                    filter_image = output[0, :, : , x]
-                    
-                    # filter visualization
-                    filter_mask = np.zeros(shape=(1, filter_count))
-                     
-                    if filter_count % 64 == 0:
-                        filter_mask = filter_mask.reshape((-1, 64))
-                    
-                    # set index of visualized filter
-                    filter_mask.itemset(x, 1)
-                    
-                    data = {'name':ID, 
-                            'image': filter_image,
-                            'filter': filter_mask, 
-                            'model_count': model_count}
-                    
-                    frame_data[name].append(data)
-
-            
-            # Figure out what frames to incrememt by
-            frame_data['count'][name] = len(frame_data[name])
-            
-            if frame_data['max'] < frame_data['count'][name]:
-                frame_data['max'] = frame_data['count'][name]
-                
-        while True:
-            data_packet = {}
-            
-            for f in range(frame_data['max']):
-                for name in architectures:
-                    idx =  f % frame_data['count'][name]
-                    data_packet[name] = frame_data[name][idx]
-                
-                yield data_packet
-
-
-    def plotter(args):
-        k = 0
-        for name, data_packet in args.items():
-            images[k].set_data(data_packet['image'])
-            labels[k].set_text('Layer ' + data_packet['name'])
-            nodes[k] = act_ax[k].imshow(data_packet['filter'])
-            k += 1
-        res = images + labels + nodes
-
-        return res
-        
-    anim = animation.FuncAnimation(fig, plotter,
-                                   frames=layer_generator,
-                                   interval=1,
+    anim = animation.FuncAnimation(plot['fig'], animate,
+                                   frames=layer_generator(data),
+                                   init_func=init(plot),
+                                   fargs=(plot,),
+                                   interval=10,
                                    blit=True,
                                    repeat=False)
     
