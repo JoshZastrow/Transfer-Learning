@@ -347,7 +347,7 @@ if __name__ == '__main__':
                                    blit=True,
                                    repeat=False)
     
-    plt.show() 
-    
+    # anim.save
+    plt.show()
     
     
