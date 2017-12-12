@@ -30,8 +30,6 @@ def get_image(tensor=True):
 def create_plot_handles(model_list):
     
     plotter = {}
-    image = get_image(tensor=False)
-    
     # Animate the transformations
     plotter['fig'] = plt.figure(facecolor='grey', figsize=(12,6))
     plotter['gs1'] = gridspec.GridSpec(1, len(model_list))
@@ -51,6 +49,10 @@ def create_plot_handles(model_list):
     plotter['ax1'] = {}
     plotter['ax2'] = {}
     
+    plotter['image'] = {}
+    plotter['label'] = {}
+    plotter['filter'] = {}
+    
     for i, name in enumerate(model_list):
         
         # add subplots
@@ -65,10 +67,6 @@ def create_plot_handles(model_list):
         plotter['ax2'][name].set_xticks([])
         plotter['ax2'][name].set_yticks([])
         plotter['ax2'][name].set_title('Filter Activation')
-        
-        
-        plotter['ax1'][name] = plotter['ax1'][name].imshow(image, animated=True)
-        plotter['ax2'][name] = plotter['ax2'][name].imshow(np.ones((1,3)), animated=True)
         
     return plotter
 
@@ -135,7 +133,7 @@ def create_filter_outputs(deepNN):
                 # set index of visualized filter
                 filter_mask.itemset(x, 1)
                 
-                data = {'layer': 'Layer' + ID + '\nfilter ' + str(x), 
+                data = {'layer': 'Layer' + ID, # + '\nfilter ' + str(x), 
                         'image': filter_image,
                         'filter': filter_mask}
                 
@@ -150,43 +148,36 @@ def layer_generator(frame_data):
 
         data_packet = {}
         model_list = frame_data['models']
-        
-        for f in range(frame_data['max']):
+    
+        for f in range(0, frame_data['max']):
             for name in model_list:
                 idx =  f % frame_data['count'][name]
                 data_packet[name] = frame_data[name][idx]
             
             yield data_packet
 
-def init(plot_handle):
-    data_packet = {}
-    
-    for name in plot_handle['ax1'].keys():
-        data_packet[name] = {'image' : get_image(tensor=False),
-                             'layer' : 'input',
-                             'filter': np.ones(shape=(1, 3))}
-        
-        ax_transform = plot_handle['ax1'][name].transAxes
-        
-        plot_handle['ax1'][name].imshow(data_packet[name]['image'], animated=True)
-        plot_handle['ax1'][name].text(
-                                    x=0.50, 
-                                    y=0.860, 
-                                    s=data_packet[name]['layer'], 
-                                    fontsize=14, 
-                                    horizontalalignment='center', 
-                                    transform=ax_transform, 
-                                    color='white')
-        plot_handle['ax2'][name].imshow(data_packet[name]['filter'])
-      
+
 def animate(data_packet, plot_handle):
     frames = []
     
     for name in plot_handle['ax1'].keys():
-        frames += [plot_handle['ax1'][name].set_data(data_packet[name]['image'])]
-        frames += [plot_handle['ax1'][name].set_text(data_packet[name]['layer'])]
-        frames += [plot_handle['ax2'][name].set_data(data_packet[name]['filter'])]
-      
+#        ax_transform = plot_handle['ax1'][name].transAxes
+#        
+        frames += [plot_handle['ax1'][name].imshow(
+                data_packet[name]['image'], 
+                animated=True)]
+    
+        frames += [plot_handle['ax2'][name].imshow(
+                data_packet[name]['filter'])]
+    
+        frames += [plot_handle['ax1'][name].text(
+                x=0.50, 
+                y=0.800, 
+                s=data_packet[name]['layer'], 
+                fontsize=12, 
+                horizontalalignment='center', 
+                color='white')]
+
     return frames
     
     
@@ -236,7 +227,7 @@ if __name__ == '__main__':
     img = np.expand_dims(img, axis=0)
     
     
-    architectures = ['VGG16'] #, 'InceptionV3', 'Xception', 'ResNet50']
+    architectures = ['VGG16', 'InceptionV3', 'Xception', 'ResNet50']
 
     plot = create_plot_handles(architectures)
     DNNs = create_model_activations(architectures)
@@ -244,13 +235,10 @@ if __name__ == '__main__':
     
     anim = animation.FuncAnimation(plot['fig'], animate,
                                    frames=layer_generator(data),
-                                   init_func=init(plot),
-                                   fargs=(plot,),
-                                   interval=10,
+                                   fargs=(plot,), interval=5,
                                    blit=True,
                                    repeat=False)
     
-    # anim.save
+    # anim.save('test_animation.mp4', fps=30)
     plt.show()
-    
     
