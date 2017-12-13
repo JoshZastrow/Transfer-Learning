@@ -103,6 +103,8 @@ and make sure you have those libraries installed.
 
 Before running the model, you should configure the model parameters as well as the settings for the data pipeline. This includes setting the batch size, the number of samples to run, the file path to the log, the image directory folder
 
+
+
 All the pertinent files are in the Transfer-Learning folder, so navigate there before running any programs:
 
     cd Transfer-Learning
@@ -142,6 +144,10 @@ The code for this visualizer can be found [here](https://github.com/JoshZastrow/
 The abstraction done by these models is a bit of a black box, so the raw output of these transformations are difficult to interpolate at a glance.
 
 The original image is essentially a pixel window of several hundred values both in height and width, with only three channels/filters of color. The resulting transformation leaves us a very small pixel window--only a couple pixels across, but with many filters/channels. The resulting 2048 filters were organized in 32 x 64 tiles.
+
+Due to how abstracted the final activations were on the transfer learning model, I decided to visualize the activations of each layer with the given cat image as the input. Below is a gif of each layer's output with the cat image as the input. The visualizer.py will run the full animation from begininning layer to end for all the models, but below is the activations at the initial layers as the image would pass through the model.
+
+![What happens to an image as it passes through DNN's](https://github.com/JoshZastrow/Transfer-Learning/blob/master/cat_processed.gif)
 
 # Next Steps
 
